@@ -1,0 +1,6 @@
+{
+  "name": "hanbit-todo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "오늘의 할 일 - Gemini 챗봇이 포함된 할 일 관리 웹앱"
+}

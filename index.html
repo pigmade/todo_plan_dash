@@ -1,0 +1,1627 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>오늘의 할 일</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --sidebar-w:    260px;
+      --bg:           #f2f2f7;
+      --surface:      #ffffff;
+      --surface-2:    #f5f5f7;
+      --border:       rgba(0,0,0,0.08);
+      --text-primary: #1c1c1e;
+      --text-secondary: #6e6e73;
+      --text-tertiary:  #aeaeb2;
+      --accent:       #007aff;
+      --accent-light: rgba(0,122,255,0.08);
+      --accent-hover: #0062cc;
+      --danger:       #ff3b30;
+      --danger-hover: #e0291f;
+      --success:      #34c759;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 18px;
+      --shadow-card:  0 1px 6px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.04);
+      --transition:   0.18s ease;
+    }
+
+    html { -webkit-font-smoothing: antialiased; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+      color: var(--text-primary);
+      background: var(--bg);
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* ── Scrollbars ── */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #d1d1d6; border-radius: 100px; }
+    ::-webkit-scrollbar-thumb:hover { background: #aeaeb2; }
+
+    /* ════════════════════════════════
+       SIDEBAR
+    ════════════════════════════════ */
+    .sidebar {
+      width: var(--sidebar-w);
+      flex-shrink: 0;
+      height: 100vh;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Brand */
+    .sidebar-top {
+      padding: 28px 20px 18px;
+      flex-shrink: 0;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .brand-icon {
+      width: 34px; height: 34px;
+      background: var(--accent);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: 17px; font-weight: 800;
+      flex-shrink: 0;
+      box-shadow: 0 2px 8px rgba(0,122,255,0.35);
+    }
+
+    .brand-name {
+      font-size: 16px; font-weight: 700; letter-spacing: -0.3px;
+      color: var(--text-primary);
+    }
+
+    .sidebar-date {
+      font-size: 12px; color: var(--text-secondary); letter-spacing: 0.01em;
+      padding-left: 2px;
+    }
+
+    /* Nav */
+    .nav-section {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px 12px;
+    }
+
+    .nav-label {
+      font-size: 11px; font-weight: 600; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--text-tertiary);
+      padding: 6px 8px 8px;
+    }
+
+    #filter-scroll {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .filter-btn {
+      display: flex; align-items: center; gap: 9px;
+      height: 36px; padding: 0 10px;
+      border: none; border-radius: var(--radius-sm);
+      background: transparent;
+      font-size: 14px; font-weight: 500; font-family: inherit;
+      color: var(--text-secondary);
+      cursor: pointer; white-space: nowrap;
+      transition: background var(--transition), color var(--transition);
+      text-align: left; width: 100%;
+    }
+
+    .filter-btn:hover {
+      background: var(--surface-2);
+      color: var(--text-primary);
+    }
+
+    .filter-btn.active {
+      background: var(--accent-light);
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .filter-dot {
+      width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+    }
+
+    .filter-count {
+      margin-left: auto;
+      font-size: 11px; font-weight: 600;
+      color: var(--text-tertiary);
+      background: var(--bg);
+      padding: 1px 7px; border-radius: 100px;
+      min-width: 22px; text-align: center;
+    }
+
+    .filter-btn.active .filter-count {
+      background: rgba(0,122,255,0.12);
+      color: var(--accent);
+    }
+
+    /* Sidebar divider */
+    .sidebar-divider {
+      height: 1px;
+      background: var(--border);
+      margin: 0 20px;
+      flex-shrink: 0;
+    }
+
+    /* Sidebar bottom: progress + manage */
+    .sidebar-bottom {
+      padding: 16px 20px 24px;
+      flex-shrink: 0;
+    }
+
+    .sidebar-progress-row {
+      display: flex; justify-content: space-between; align-items: baseline;
+      margin-bottom: 8px;
+    }
+
+    .sidebar-progress-label {
+      font-size: 12px; font-weight: 600; color: var(--text-secondary);
+    }
+
+    .sidebar-pct {
+      font-size: 13px; font-weight: 700; color: var(--accent);
+    }
+
+    .progress-track {
+      height: 5px; background: var(--bg); border-radius: 100px; overflow: hidden;
+      margin-bottom: 10px;
+    }
+
+    .progress-fill {
+      height: 100%; width: 0%;
+      background: linear-gradient(90deg, var(--accent), #5ac8fa);
+      border-radius: 100px;
+      transition: width 0.55s cubic-bezier(0.4,0,0.2,1);
+    }
+
+    .progress-fill.complete {
+      background: linear-gradient(90deg, var(--success), #30d158);
+    }
+
+    .stats-row {
+      display: flex; gap: 6px; margin-bottom: 14px;
+    }
+
+    .stat-chip {
+      flex: 1; background: var(--bg); border-radius: var(--radius-sm);
+      padding: 8px 4px; text-align: center;
+    }
+
+    .stat-value {
+      display: block; font-size: 18px; font-weight: 700;
+      color: var(--text-primary); line-height: 1.2; letter-spacing: -0.5px;
+    }
+
+    .stat-label {
+      display: block; font-size: 10px; color: var(--text-secondary); margin-top: 1px;
+    }
+
+    .stat-chip.done   .stat-value { color: var(--success); }
+    .stat-chip.remain .stat-value { color: var(--accent); }
+
+    .manage-cat-btn {
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      width: 100%; height: 34px;
+      border: 1.5px solid var(--border); border-radius: var(--radius-md);
+      background: transparent; font-size: 12px; font-weight: 500; font-family: inherit;
+      color: var(--text-secondary); cursor: pointer;
+      transition: all var(--transition);
+    }
+
+    .manage-cat-btn:hover {
+      border-color: var(--accent); color: var(--accent);
+      background: var(--accent-light);
+    }
+
+    /* ════════════════════════════════
+       MAIN
+    ════════════════════════════════ */
+    .main {
+      flex: 1;
+      height: 100vh;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    /* Top toolbar */
+    .main-toolbar {
+      padding: 36px 44px 0;
+      flex-shrink: 0;
+      position: sticky;
+      top: 0;
+      background: var(--bg);
+      z-index: 10;
+    }
+
+    .main-header-row {
+      display: flex; align-items: baseline; gap: 10px; margin-bottom: 18px;
+    }
+
+    .main-title {
+      font-size: 26px; font-weight: 700; letter-spacing: -0.5px;
+    }
+
+    #section-count {
+      font-size: 14px; font-weight: 500; color: var(--text-tertiary);
+    }
+
+    /* Input bar */
+    .input-bar {
+      display: flex; gap: 8px; margin-bottom: 24px;
+    }
+
+    .todo-input {
+      flex: 1; height: 42px; padding: 0 16px;
+      background: var(--surface); border: 1.5px solid var(--border);
+      border-radius: var(--radius-md); font-size: 15px; font-family: inherit;
+      color: var(--text-primary); outline: none;
+      box-shadow: var(--shadow-card);
+      transition: border-color var(--transition), box-shadow var(--transition);
+    }
+
+    .todo-input::placeholder { color: var(--text-tertiary); }
+
+    .todo-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(0,122,255,0.12), var(--shadow-card);
+    }
+
+    .category-select {
+      height: 42px; padding: 0 12px; padding-right: 32px;
+      background: var(--surface); border: 1.5px solid var(--border);
+      border-radius: var(--radius-md); font-size: 14px; font-family: inherit;
+      color: var(--text-primary); outline: none; cursor: pointer; min-width: 110px;
+      transition: border-color var(--transition);
+      appearance: none; -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238e8e93' stroke-width='1.8' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 12px center;
+      box-shadow: var(--shadow-card);
+    }
+
+    .category-select:focus { border-color: var(--accent); }
+
+    .add-btn {
+      height: 42px; padding: 0 22px;
+      background: var(--accent); color: #fff;
+      border: none; border-radius: var(--radius-md);
+      font-size: 14px; font-weight: 600; font-family: inherit;
+      cursor: pointer; white-space: nowrap;
+      transition: background var(--transition), transform var(--transition);
+      box-shadow: 0 2px 8px rgba(0,122,255,0.3);
+    }
+
+    .add-btn:hover  { background: var(--accent-hover); }
+    .add-btn:active { transform: scale(0.97); }
+
+    /* Content area */
+    .main-content {
+      flex: 1;
+      padding: 0 44px 48px;
+    }
+
+    .section-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .section-title {
+      font-size: 11px; font-weight: 600; letter-spacing: 0.07em;
+      text-transform: uppercase; color: var(--text-tertiary);
+    }
+
+    /* ── Todo List ── */
+    .todo-list { display: flex; flex-direction: column; gap: 7px; }
+
+    /* ── Todo Item ── */
+    .todo-item {
+      background: var(--surface);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-card);
+      padding: 13px 16px;
+      display: flex; align-items: center; gap: 14px;
+      transition: transform var(--transition), box-shadow var(--transition), opacity var(--transition);
+    }
+
+    .todo-item:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.09), 0 0 0 1px rgba(0,0,0,0.05);
+    }
+
+    .todo-item.done { opacity: 0.45; }
+
+    /* Checkbox */
+    .todo-check {
+      width: 22px; height: 22px; border-radius: 50%;
+      border: 2px solid #d1d1d6;
+      background: transparent; flex-shrink: 0; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all var(--transition); position: relative;
+    }
+
+    .todo-check::after {
+      content: ''; width: 6px; height: 10px;
+      border-right: 2px solid #fff; border-bottom: 2px solid #fff;
+      transform: rotate(40deg) translate(-1px,-1px);
+      opacity: 0; transition: opacity var(--transition);
+    }
+
+    .todo-check.checked { background: var(--success); border-color: var(--success); }
+    .todo-check.checked::after { opacity: 1; }
+
+    /* Body: horizontal layout for desktop */
+    .todo-body {
+      flex: 1; min-width: 0;
+      display: flex; flex-direction: row; align-items: center; gap: 10px;
+    }
+
+    .todo-text {
+      font-size: 15px; font-weight: 500; flex: 1;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      line-height: 1.4;
+    }
+
+    .todo-item.done .todo-text {
+      text-decoration: line-through; color: var(--text-tertiary);
+    }
+
+    .todo-meta { display: flex; align-items: center; flex-shrink: 0; }
+
+    .todo-badge {
+      display: inline-flex; align-items: center;
+      font-size: 11px; font-weight: 600;
+      padding: 3px 9px; border-radius: 100px; letter-spacing: 0.02em;
+    }
+
+    /* Actions: visible on hover */
+    .todo-actions {
+      display: flex; gap: 2px; flex-shrink: 0;
+      opacity: 0;
+      transition: opacity var(--transition);
+    }
+
+    .todo-item:hover .todo-actions { opacity: 1; }
+
+    .todo-edit, .todo-delete, .todo-save, .todo-cancel-edit {
+      width: 30px; height: 30px; border-radius: 8px; border: none;
+      background: transparent; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px;
+      transition: background var(--transition), color var(--transition);
+    }
+
+    .todo-edit         { color: var(--text-tertiary); }
+    .todo-edit:hover   { background: rgba(0,122,255,0.1); color: var(--accent); }
+    .todo-delete       { color: var(--text-tertiary); }
+    .todo-delete:hover { background: rgba(255,59,48,0.1); color: var(--danger); }
+    .todo-save         { color: var(--success); }
+    .todo-save:hover   { background: rgba(52,199,89,0.1); }
+    .todo-cancel-edit       { color: var(--text-tertiary); }
+    .todo-cancel-edit:hover { background: rgba(255,59,48,0.1); color: var(--danger); }
+
+    /* Inline edit */
+    .todo-edit-input {
+      flex: 1; height: 30px; padding: 0 10px;
+      background: var(--surface-2); border: 1.5px solid var(--accent);
+      border-radius: var(--radius-sm); font-size: 14px; font-family: inherit;
+      color: var(--text-primary); outline: none;
+      box-shadow: 0 0 0 3px rgba(0,122,255,0.12);
+    }
+
+    .todo-edit-cat-select {
+      height: 30px; padding: 0 8px; padding-right: 24px;
+      background: var(--surface-2); border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm); font-size: 12px; font-family: inherit;
+      color: var(--text-primary); outline: none; cursor: pointer;
+      transition: border-color var(--transition);
+      appearance: none; -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238e8e93' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 6px center;
+      max-width: 130px; flex-shrink: 0;
+    }
+
+    .todo-edit-cat-select:focus { border-color: var(--accent); }
+
+    /* Edit mode: show actions */
+    .todo-item.editing .todo-actions { opacity: 1; }
+
+    /* ── Empty State ── */
+    .empty-state {
+      display: none; text-align: center; padding: 100px 24px;
+    }
+
+    .empty-icon  { font-size: 56px; margin-bottom: 16px; }
+    .empty-title { font-size: 18px; font-weight: 600; margin-bottom: 6px; }
+    .empty-desc  { font-size: 14px; color: var(--text-secondary); }
+
+    /* ════════════════════════════════
+       CONFIRM MODAL
+    ════════════════════════════════ */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+      display: flex; align-items: center; justify-content: center; padding: 20px;
+      z-index: 200; opacity: 0; pointer-events: none; transition: opacity 0.2s ease;
+      backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    }
+
+    .modal-overlay.visible { opacity: 1; pointer-events: auto; }
+
+    .modal {
+      background: var(--surface); border-radius: var(--radius-lg);
+      padding: 28px 24px 24px; max-width: 360px; width: 100%;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.18);
+      transform: scale(0.92) translateY(12px);
+      transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1);
+    }
+
+    .modal-overlay.visible .modal { transform: scale(1) translateY(0); }
+
+    .modal-icon    { font-size: 40px; text-align: center; margin-bottom: 12px; }
+    .modal-title   { font-size: 17px; font-weight: 700; text-align: center; margin-bottom: 8px; }
+    .modal-message { font-size: 14px; color: var(--text-secondary); text-align: center; line-height: 1.65; margin-bottom: 24px; }
+    .modal-actions { display: flex; gap: 10px; }
+
+    .modal-btn {
+      flex: 1; height: 44px; border: none; border-radius: var(--radius-md);
+      font-size: 15px; font-weight: 600; font-family: inherit; cursor: pointer;
+      transition: all var(--transition);
+    }
+
+    .modal-btn--cancel  { background: var(--bg); color: var(--text-secondary); }
+    .modal-btn--cancel:hover  { background: #e5e5ea; }
+    .modal-btn--danger  { background: var(--danger); color: #fff; }
+    .modal-btn--danger:hover  { background: var(--danger-hover); }
+    .modal-btn--primary { background: var(--accent); color: #fff; }
+    .modal-btn--primary:hover { background: var(--accent-hover); }
+
+    /* ════════════════════════════════
+       CATEGORY MODAL
+    ════════════════════════════════ */
+    .cat-modal {
+      max-width: 440px; max-height: 88vh;
+      display: flex; flex-direction: column; overflow: hidden;
+    }
+
+    .cat-modal-title { font-size: 17px; font-weight: 700; text-align: center; margin-bottom: 16px; }
+
+    .cat-list {
+      flex: 1; overflow-y: auto; display: flex; flex-direction: column;
+      gap: 8px; min-height: 40px; max-height: 280px;
+    }
+
+    .cat-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px; background: var(--surface-2);
+      border-radius: var(--radius-md); min-height: 48px;
+    }
+
+    .cat-color-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+    .cat-item-label { flex: 1; font-size: 15px; font-weight: 500; }
+    .cat-item-actions { display: flex; gap: 4px; flex-shrink: 0; }
+
+    .cat-item-btn {
+      width: 28px; height: 28px; border-radius: 50%; border: none; background: transparent;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      font-size: 14px; color: var(--text-tertiary);
+      transition: background var(--transition), color var(--transition);
+    }
+
+    .cat-item-btn.edit:hover { background: rgba(0,122,255,0.1); color: var(--accent); }
+    .cat-item-btn.del:hover  { background: rgba(255,59,48,0.1); color: var(--danger); }
+    .cat-item-btn:disabled   { opacity: 0.25; cursor: not-allowed; }
+
+    .cat-edit-area { flex: 1; display: flex; flex-direction: column; gap: 7px; }
+    .cat-mini-picker { display: flex; flex-wrap: wrap; gap: 5px; }
+
+    .cat-color-swatch {
+      width: 20px; height: 20px; border-radius: 50%;
+      border: 2.5px solid transparent; cursor: pointer;
+      transition: transform var(--transition), border-color var(--transition);
+      flex-shrink: 0;
+    }
+
+    .cat-color-swatch:hover   { transform: scale(1.2); }
+    .cat-color-swatch.selected { border-color: var(--text-primary); transform: scale(1.15); }
+
+    .cat-edit-input {
+      height: 32px; padding: 0 10px; background: var(--surface);
+      border: 1.5px solid var(--accent); border-radius: var(--radius-sm);
+      font-size: 14px; font-family: inherit; color: var(--text-primary); outline: none;
+      box-shadow: 0 0 0 3px rgba(0,122,255,0.12); width: 100%;
+    }
+
+    .cat-divider { height: 1px; background: var(--border); margin: 16px 0; flex-shrink: 0; }
+    .cat-add-label { font-size: 12px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px; }
+    .cat-color-picker { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+
+    .cat-color-swatch-lg {
+      width: 26px; height: 26px; border-radius: 50%;
+      border: 2.5px solid transparent; cursor: pointer;
+      transition: transform var(--transition), border-color var(--transition);
+    }
+
+    .cat-color-swatch-lg:hover   { transform: scale(1.2); }
+    .cat-color-swatch-lg.selected { border-color: var(--text-primary); transform: scale(1.15); }
+
+    .cat-add-row { display: flex; gap: 8px; margin-bottom: 16px; }
+
+    .cat-name-input {
+      flex: 1; height: 40px; padding: 0 12px; background: var(--surface-2);
+      border: 1.5px solid var(--border); border-radius: var(--radius-md);
+      font-size: 15px; font-family: inherit; color: var(--text-primary); outline: none;
+      transition: border-color var(--transition), box-shadow var(--transition);
+    }
+
+    .cat-name-input::placeholder { color: var(--text-tertiary); }
+    .cat-name-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,122,255,0.12); }
+
+    .cat-add-submit {
+      height: 40px; padding: 0 16px; background: var(--accent); color: #fff;
+      border: none; border-radius: var(--radius-md); font-size: 14px; font-weight: 600;
+      font-family: inherit; cursor: pointer; white-space: nowrap;
+      transition: background var(--transition);
+    }
+
+    .cat-add-submit:hover { background: var(--accent-hover); }
+
+    /* ════════════════════════════════
+       ANIMATIONS
+    ════════════════════════════════ */
+    @keyframes itemEnter {
+      from { opacity: 0; transform: translateY(-8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .item-enter { animation: itemEnter 0.25s cubic-bezier(0.34,1.56,0.64,1); }
+
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      25%     { transform: translateX(-6px); }
+      50%     { transform: translateX(6px); }
+      75%     { transform: translateX(-3px); }
+    }
+
+    .shake {
+      animation: shake 0.35s ease;
+      border-color: var(--danger) !important;
+      box-shadow: 0 0 0 3px rgba(255,59,48,0.12) !important;
+    }
+
+    /* ════════════════════════════════
+       RESPONSIVE (≤ 768px → mobile)
+    ════════════════════════════════ */
+    @media (max-width: 768px) {
+      body { display: block; height: auto; overflow: auto; padding: 0 16px 64px; }
+      .sidebar { display: none; }
+      .main { height: auto; overflow: visible; }
+      .main-toolbar { padding: 40px 0 0; position: static; }
+      .main-content { padding: 0 0 40px; }
+      .main-header-row { margin-bottom: 16px; }
+      .main-title { font-size: 28px; }
+      .input-bar { flex-wrap: wrap; }
+      .add-btn { flex: 1; }
+      .todo-actions { opacity: 1; }
+      .todo-body { flex-direction: column; align-items: flex-start; gap: 5px; }
+      .todo-text { white-space: normal; }
+      .chat-panel { right: 12px; left: 12px; width: auto; bottom: 84px; height: min(460px, calc(100vh - 120px)); }
+      .chat-fab { right: 16px; bottom: 16px; }
+    }
+
+    /* ════════════════════════════════
+       CHAT WIDGET (Gemini)
+    ════════════════════════════════ */
+    .chat-fab {
+      position: fixed; right: 24px; bottom: 24px; width: 56px; height: 56px;
+      border-radius: 50%; border: none; background: var(--accent); color: #fff;
+      font-size: 24px; cursor: pointer; z-index: 150;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 4px 16px rgba(0,122,255,0.4);
+      transition: background var(--transition), transform var(--transition);
+    }
+
+    .chat-fab:hover  { background: var(--accent-hover); transform: scale(1.06); }
+    .chat-fab:active { transform: scale(0.96); }
+
+    .chat-panel {
+      position: fixed; right: 24px; bottom: 92px; width: 340px;
+      max-width: calc(100vw - 32px); height: 460px; max-height: calc(100vh - 140px);
+      background: var(--surface); border-radius: var(--radius-lg);
+      box-shadow: 0 24px 64px rgba(0,0,0,0.18), 0 0 0 1px rgba(0,0,0,0.05);
+      display: flex; flex-direction: column; overflow: hidden; z-index: 150;
+      opacity: 0; transform: scale(0.94) translateY(12px); pointer-events: none;
+      transition: opacity 0.2s ease, transform 0.25s cubic-bezier(0.34,1.56,0.64,1);
+    }
+
+    .chat-panel.visible { opacity: 1; transform: scale(1) translateY(0); pointer-events: auto; }
+
+    .chat-header {
+      padding: 14px 14px 14px 16px; display: flex; align-items: center; gap: 8px;
+      border-bottom: 1px solid var(--border); flex-shrink: 0;
+    }
+
+    .chat-header-icon {
+      width: 26px; height: 26px; border-radius: 8px; background: var(--accent);
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: 13px; flex-shrink: 0;
+    }
+
+    .chat-header-title { font-size: 14px; font-weight: 700; flex: 1; }
+
+    .chat-header-close {
+      width: 26px; height: 26px; border: none; background: transparent;
+      border-radius: 8px; color: var(--text-tertiary); cursor: pointer;
+      font-size: 16px; display: flex; align-items: center; justify-content: center;
+      transition: background var(--transition), color var(--transition);
+    }
+
+    .chat-header-close:hover { background: var(--surface-2); color: var(--text-primary); }
+
+    .chat-messages {
+      flex: 1; overflow-y: auto; padding: 14px; display: flex;
+      flex-direction: column; gap: 10px;
+    }
+
+    .chat-empty { text-align: center; color: var(--text-tertiary); font-size: 12.5px; padding: 24px 12px; }
+
+    .chat-msg {
+      max-width: 82%; font-size: 13.5px; line-height: 1.5; padding: 9px 12px;
+      border-radius: 14px; white-space: pre-wrap; word-break: break-word;
+    }
+
+    .chat-msg.user  { align-self: flex-end; background: var(--accent); color: #fff; border-bottom-right-radius: 4px; }
+    .chat-msg.bot   { align-self: flex-start; background: var(--surface-2); color: var(--text-primary); border-bottom-left-radius: 4px; }
+    .chat-msg.error { align-self: flex-start; background: rgba(255,59,48,0.1); color: var(--danger); border-bottom-left-radius: 4px; }
+
+    .chat-msg.typing { align-self: flex-start; background: var(--surface-2); display: flex; gap: 4px; padding: 12px 14px; }
+
+    .chat-typing-dot {
+      width: 6px; height: 6px; border-radius: 50%; background: var(--text-tertiary);
+      animation: chatTypingBounce 1.2s infinite ease-in-out;
+    }
+
+    .chat-typing-dot:nth-child(2) { animation-delay: 0.15s; }
+    .chat-typing-dot:nth-child(3) { animation-delay: 0.3s; }
+
+    @keyframes chatTypingBounce {
+      0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
+      30%           { transform: translateY(-4px); opacity: 1; }
+    }
+
+    .chat-input-row {
+      display: flex; gap: 6px; padding: 10px 12px;
+      border-top: 1px solid var(--border); flex-shrink: 0;
+    }
+
+    .chat-input {
+      flex: 1; height: 38px; padding: 0 12px;
+      background: var(--surface-2); border: 1.5px solid var(--border);
+      border-radius: var(--radius-md); font-size: 13.5px; font-family: inherit;
+      color: var(--text-primary); outline: none;
+      transition: border-color var(--transition);
+    }
+
+    .chat-input:focus { border-color: var(--accent); }
+
+    .chat-send-btn {
+      width: 38px; height: 38px; border: none; border-radius: var(--radius-md);
+      background: var(--accent); color: #fff; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; font-size: 15px;
+      flex-shrink: 0; transition: background var(--transition);
+    }
+
+    .chat-send-btn:hover     { background: var(--accent-hover); }
+    .chat-send-btn:disabled  { opacity: 0.5; cursor: not-allowed; }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════════════════
+     SIDEBAR
+══════════════════════════════ -->
+<aside class="sidebar">
+
+  <div class="sidebar-top">
+    <div class="brand">
+      <div class="brand-icon">✓</div>
+      <span class="brand-name">오늘의 할 일</span>
+    </div>
+    <p id="header-date" class="sidebar-date"></p>
+  </div>
+
+  <nav class="nav-section">
+    <p class="nav-label">카테고리</p>
+    <div id="filter-scroll"></div>
+  </nav>
+
+  <div class="sidebar-divider"></div>
+
+  <div class="sidebar-bottom">
+    <div class="sidebar-progress-row">
+      <span class="sidebar-progress-label">오늘의 진행률</span>
+      <span id="progress-percent" class="sidebar-pct">0%</span>
+    </div>
+    <div class="progress-track">
+      <div id="progress-fill" class="progress-fill"></div>
+    </div>
+    <div class="stats-row">
+      <div class="stat-chip">
+        <span id="stat-total"  class="stat-value">0</span>
+        <span class="stat-label">전체</span>
+      </div>
+      <div class="stat-chip done">
+        <span id="stat-done"   class="stat-value">0</span>
+        <span class="stat-label">완료</span>
+      </div>
+      <div class="stat-chip remain">
+        <span id="stat-remain" class="stat-value">0</span>
+        <span class="stat-label">남은</span>
+      </div>
+    </div>
+    <button id="manage-cat-btn" class="manage-cat-btn">⚙ 카테고리 관리</button>
+  </div>
+
+</aside>
+
+<!-- ══════════════════════════════
+     MAIN
+══════════════════════════════ -->
+<main class="main">
+
+  <div class="main-toolbar">
+    <div class="main-header-row">
+      <h1 id="main-title" class="main-title">전체 할 일</h1>
+      <span id="section-count" class="section-count"></span>
+    </div>
+    <div class="input-bar">
+      <input id="todo-input" class="todo-input" type="text"
+             placeholder="새 할 일을 입력하세요..." autocomplete="off" />
+      <select id="category-select" class="category-select"></select>
+      <button id="add-btn" class="add-btn">+ 추가</button>
+    </div>
+  </div>
+
+  <div class="main-content">
+    <div class="section-header">
+      <span class="section-title">할 일 목록</span>
+    </div>
+    <div id="todo-list" class="todo-list"></div>
+    <div id="empty-state" class="empty-state">
+      <div class="empty-icon">📋</div>
+      <p id="empty-title" class="empty-title">할 일이 없어요</p>
+      <p id="empty-desc"  class="empty-desc">위에서 새 할 일을 추가해보세요.</p>
+    </div>
+  </div>
+
+</main>
+
+<!-- ══════════════════════════════
+     CONFIRM MODAL
+══════════════════════════════ -->
+<div id="modal-overlay" class="modal-overlay" role="dialog" aria-modal="true">
+  <div class="modal">
+    <div id="modal-icon"    class="modal-icon">🗑️</div>
+    <p   id="modal-title"   class="modal-title"></p>
+    <p   id="modal-message" class="modal-message"></p>
+    <div class="modal-actions">
+      <button id="modal-cancel"  class="modal-btn modal-btn--cancel">취소</button>
+      <button id="modal-confirm" class="modal-btn modal-btn--danger">삭제</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════
+     CATEGORY MODAL
+══════════════════════════════ -->
+<div id="cat-overlay" class="modal-overlay" role="dialog" aria-modal="true">
+  <div class="modal cat-modal">
+    <p class="cat-modal-title">🏷️ 카테고리 관리</p>
+    <div id="cat-list" class="cat-list"></div>
+    <div class="cat-divider"></div>
+    <p class="cat-add-label">새 카테고리 추가</p>
+    <div id="new-cat-picker" class="cat-color-picker"></div>
+    <div class="cat-add-row">
+      <input id="cat-name-input" class="cat-name-input" type="text"
+             placeholder="이름 입력 (최대 10자)" maxlength="10" autocomplete="off" />
+      <button id="cat-add-btn" class="cat-add-submit">+ 추가</button>
+    </div>
+    <button id="cat-close-btn" class="modal-btn modal-btn--cancel" style="width:100%">닫기</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════
+     CHAT WIDGET (Gemini)
+══════════════════════════════ -->
+<button id="chat-fab" class="chat-fab" title="AI 도우미" aria-label="AI 도우미 열기">💬</button>
+
+<div id="chat-panel" class="chat-panel" role="dialog" aria-label="AI 챗봇">
+  <div class="chat-header">
+    <div class="chat-header-icon">✦</div>
+    <span class="chat-header-title">AI 도우미</span>
+    <button id="chat-close-btn" class="chat-header-close" title="닫기">×</button>
+  </div>
+  <div id="chat-messages" class="chat-messages">
+    <div class="chat-empty">궁금한 점을 물어보세요 🙂</div>
+  </div>
+  <div class="chat-input-row">
+    <input id="chat-input" class="chat-input" type="text"
+           placeholder="메시지를 입력하세요..." autocomplete="off" />
+    <button id="chat-send-btn" class="chat-send-btn" title="전송">➤</button>
+  </div>
+</div>
+
+<script>
+  // ── 상수 ─────────────────────────────────────────────────────────────────
+  const DAY_NAMES = ['일','월','화','수','목','금','토'];
+  const LS_TODOS  = 'hanbit-todos';
+  const LS_CATS   = 'hanbit-categories';
+
+  const COLOR_PALETTE = [
+    '#007aff','#5856d6','#34c759','#ff9500',
+    '#ff3b30','#ff2d55','#5ac8fa','#ffcc00',
+    '#8e8e93','#a2845e',
+  ];
+
+  const DEFAULT_CATS = [
+    { id:'work',     label:'업무', color:'#007aff' },
+    { id:'personal', label:'개인', color:'#ff9500' },
+    { id:'study',    label:'공부', color:'#5856d6' },
+    { id:'health',   label:'건강', color:'#34c759' },
+    { id:'other',    label:'기타', color:'#8e8e93' },
+  ];
+
+  const SAMPLE_TODOS = [
+    { id:1, title:'주간 보고서 작성',               category:'work',     completed:true  },
+    { id:2, title:'아침 30분 조깅',                category:'health',   completed:true  },
+    { id:3, title:'팀 미팅 자료 준비',               category:'work',     completed:false },
+    { id:4, title:'JavaScript 알고리즘 1챕터 풀기',  category:'study',    completed:false },
+    { id:5, title:'마트에서 장보기',                category:'personal', completed:false },
+    { id:6, title:'독서 30분 (클린 코드)',           category:'other',    completed:false },
+  ];
+
+  // ── 상태 ─────────────────────────────────────────────────────────────────
+  let todos         = [];
+  let categories    = [];
+  let currentFilter = 'all';
+  let pendingAction = null;
+  let newCatColor   = COLOR_PALETTE[0];
+
+  // ── DOM 참조 ──────────────────────────────────────────────────────────────
+  const todoInputEl    = document.getElementById('todo-input');
+  const catSelectEl    = document.getElementById('category-select');
+  const addBtnEl       = document.getElementById('add-btn');
+  const todoListEl     = document.getElementById('todo-list');
+  const emptyStateEl   = document.getElementById('empty-state');
+  const emptyTitleEl   = document.getElementById('empty-title');
+  const emptyDescEl    = document.getElementById('empty-desc');
+  const sectionCountEl = document.getElementById('section-count');
+  const progressFillEl = document.getElementById('progress-fill');
+  const progressPctEl  = document.getElementById('progress-percent');
+  const headerDateEl   = document.getElementById('header-date');
+  const statTotalEl    = document.getElementById('stat-total');
+  const statDoneEl     = document.getElementById('stat-done');
+  const statRemainEl   = document.getElementById('stat-remain');
+  const filterScrollEl = document.getElementById('filter-scroll');
+  const mainTitleEl    = document.getElementById('main-title');
+  const manageCatBtnEl = document.getElementById('manage-cat-btn');
+  // 확인 모달
+  const modalOverlayEl = document.getElementById('modal-overlay');
+  const modalIconEl    = document.getElementById('modal-icon');
+  const modalTitleEl   = document.getElementById('modal-title');
+  const modalMessageEl = document.getElementById('modal-message');
+  const modalCancelEl  = document.getElementById('modal-cancel');
+  const modalConfirmEl = document.getElementById('modal-confirm');
+  // 카테고리 모달
+  const catOverlayEl   = document.getElementById('cat-overlay');
+  const catListEl      = document.getElementById('cat-list');
+  const newCatPickerEl = document.getElementById('new-cat-picker');
+  const catNameInputEl = document.getElementById('cat-name-input');
+  const catAddBtnEl    = document.getElementById('cat-add-btn');
+  const catCloseBtnEl  = document.getElementById('cat-close-btn');
+
+  // ── 유틸 ─────────────────────────────────────────────────────────────────
+
+  function hexToRgba(hex, a) {
+    const r = parseInt(hex.slice(1,3),16);
+    const g = parseInt(hex.slice(3,5),16);
+    const b = parseInt(hex.slice(5,7),16);
+    return `rgba(${r},${g},${b},${a})`;
+  }
+
+  function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2,5); }
+
+  function shake(el) {
+    el.classList.add('shake');
+    el.addEventListener('animationend', () => el.classList.remove('shake'), { once: true });
+  }
+
+  function formatDate(d) {
+    return `${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일 ${DAY_NAMES[d.getDay()]}요일`;
+  }
+
+  // ── LocalStorage ──────────────────────────────────────────────────────────
+
+  function saveTodos()      { try { localStorage.setItem(LS_TODOS, JSON.stringify(todos));      } catch(e){} }
+  function saveCategories() { try { localStorage.setItem(LS_CATS,  JSON.stringify(categories)); } catch(e){} }
+
+  function loadTodos() {
+    try { const s = localStorage.getItem(LS_TODOS); if (s) return JSON.parse(s); } catch(e){}
+    return JSON.parse(JSON.stringify(SAMPLE_TODOS));
+  }
+
+  function loadCategories() {
+    try { const s = localStorage.getItem(LS_CATS); if (s) return JSON.parse(s); } catch(e){}
+    return JSON.parse(JSON.stringify(DEFAULT_CATS));
+  }
+
+  // ── 카테고리 데이터 ────────────────────────────────────────────────────────
+
+  function getCat(id)      { return categories.find(c => c.id === id) || null; }
+  function getCatLabel(id) { const c = getCat(id); return c ? c.label : id; }
+  function getCatColor(id) { const c = getCat(id); return c ? c.color : '#8e8e93'; }
+
+  function addCategory(label, color) {
+    const id = 'cat_' + genId();
+    categories.push({ id, label: label.trim(), color });
+    return id;
+  }
+
+  function updateCategory(id, label, color) {
+    const c = getCat(id);
+    if (c) { c.label = label.trim(); c.color = color; }
+  }
+
+  function deleteCategory(id, fallbackId) {
+    todos.forEach(t => { if (t.category === id) t.category = fallbackId; });
+    categories = categories.filter(c => c.id !== id);
+  }
+
+  // ── 할 일 데이터 ──────────────────────────────────────────────────────────
+
+  function addTodo(title, category) {
+    const todo = { id: Date.now(), title: title.trim(), category, completed: false };
+    todos.push(todo);
+    return todo.id;
+  }
+
+  function deleteTodo(id)  { todos = todos.filter(t => t.id !== id); }
+
+  function updateTodo(id, title, category) {
+    const t = todos.find(t => t.id === id);
+    if (t) { t.title = title.trim(); t.category = category; }
+  }
+
+  function toggleComplete(id) {
+    const t = todos.find(t => t.id === id);
+    if (t) t.completed = !t.completed;
+  }
+
+  // ── 필터 ─────────────────────────────────────────────────────────────────
+
+  function setFilter(id) {
+    currentFilter = id;
+    // 사이드바 제목 업데이트
+    mainTitleEl.textContent = id === 'all' ? '전체 할 일' : `${getCatLabel(id)} 할 일`;
+    // 버튼 active 상태
+    filterScrollEl.querySelectorAll('.filter-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.cat === id);
+    });
+  }
+
+  function getFiltered() {
+    return currentFilter === 'all' ? todos : todos.filter(t => t.category === currentFilter);
+  }
+
+  // ── select 채우기 ─────────────────────────────────────────────────────────
+
+  function fillSelect(selectEl, selectedId) {
+    const val = selectedId !== undefined ? selectedId : selectEl.value;
+    selectEl.innerHTML = '';
+    categories.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c.id;
+      opt.textContent = c.label;
+      if (c.id === val) opt.selected = true;
+      selectEl.appendChild(opt);
+    });
+  }
+
+  // ── 렌더: 사이드바 필터 버튼 ─────────────────────────────────────────────
+
+  function renderFilterBtns() {
+    filterScrollEl.innerHTML = '';
+
+    // 전체 버튼
+    const allBtn = document.createElement('button');
+    allBtn.className = `filter-btn${currentFilter === 'all' ? ' active' : ''}`;
+    allBtn.dataset.cat = 'all';
+    allBtn.appendChild(document.createTextNode('전체'));
+    const allCount = document.createElement('span');
+    allCount.className = 'filter-count';
+    allCount.textContent = todos.length;
+    allBtn.appendChild(allCount);
+    allBtn.addEventListener('click', () => { setFilter('all'); renderTodos(); });
+    filterScrollEl.appendChild(allBtn);
+
+    // 카테고리별 버튼
+    categories.forEach(cat => {
+      const count = todos.filter(t => t.category === cat.id).length;
+      const btn   = document.createElement('button');
+      btn.className  = `filter-btn${currentFilter === cat.id ? ' active' : ''}`;
+      btn.dataset.cat = cat.id;
+
+      const dot = document.createElement('span');
+      dot.className = 'filter-dot';
+      dot.style.background = cat.color;
+
+      const countSpan = document.createElement('span');
+      countSpan.className  = 'filter-count';
+      countSpan.textContent = count;
+
+      btn.appendChild(dot);
+      btn.appendChild(document.createTextNode(cat.label));
+      btn.appendChild(countSpan);
+      btn.addEventListener('click', () => { setFilter(cat.id); renderTodos(); });
+      filterScrollEl.appendChild(btn);
+    });
+  }
+
+  // ── 렌더: 진행률 (사이드바) ──────────────────────────────────────────────
+
+  function renderProgress() {
+    const total = todos.length;
+    const done  = todos.filter(t => t.completed).length;
+    const pct   = total === 0 ? 0 : Math.round((done / total) * 100);
+
+    progressPctEl.textContent  = pct + '%';
+    progressFillEl.style.width = pct + '%';
+    progressFillEl.classList.toggle('complete', pct === 100 && total > 0);
+
+    statTotalEl.textContent  = total;
+    statDoneEl.textContent   = done;
+    statRemainEl.textContent = total - done;
+  }
+
+  // ── 렌더: 할 일 항목 생성 ─────────────────────────────────────────────────
+
+  function createTodoEl(todo) {
+    const color = getCatColor(todo.category);
+    const label = getCatLabel(todo.category);
+
+    const item = document.createElement('div');
+    item.className = `todo-item${todo.completed ? ' done' : ''}`;
+    item.dataset.id = todo.id;
+
+    // 체크버튼
+    const check = document.createElement('button');
+    check.className = `todo-check${todo.completed ? ' checked' : ''}`;
+    check.title = todo.completed ? '완료 취소' : '완료';
+    check.addEventListener('click', () => handleToggle(todo.id));
+
+    // 본문 (가로 레이아웃)
+    const body = document.createElement('div');
+    body.className = 'todo-body';
+
+    const text = document.createElement('p');
+    text.className = 'todo-text';
+    text.textContent = todo.title;
+
+    const meta = document.createElement('div');
+    meta.className = 'todo-meta';
+
+    const badge = document.createElement('span');
+    badge.className = 'todo-badge';
+    badge.style.background = hexToRgba(color, 0.12);
+    badge.style.color = color;
+    badge.textContent = label;
+
+    meta.appendChild(badge);
+    body.appendChild(text);
+    body.appendChild(meta);
+
+    // 액션 버튼 (hover 시 표시)
+    const actions = document.createElement('div');
+    actions.className = 'todo-actions';
+
+    const editBtn = document.createElement('button');
+    editBtn.className = 'todo-edit';
+    editBtn.title = '수정';
+    editBtn.textContent = '✎';
+    editBtn.addEventListener('click', () => handleEdit(todo.id));
+
+    const delBtn = document.createElement('button');
+    delBtn.className = 'todo-delete';
+    delBtn.title = '삭제';
+    delBtn.textContent = '×';
+    delBtn.addEventListener('click', () => handleDeleteTodo(todo.id));
+
+    actions.appendChild(editBtn);
+    actions.appendChild(delBtn);
+    item.appendChild(check);
+    item.appendChild(body);
+    item.appendChild(actions);
+    return item;
+  }
+
+  // ── 렌더: 전체 목록 ──────────────────────────────────────────────────────
+
+  function renderTodos() {
+    const filtered = getFiltered();
+    todoListEl.innerHTML = '';
+    sectionCountEl.textContent = `${filtered.length}개`;
+
+    if (filtered.length === 0) {
+      emptyTitleEl.textContent = currentFilter === 'all'
+        ? '할 일이 없어요'
+        : `${getCatLabel(currentFilter)} 할 일이 없어요`;
+      emptyDescEl.textContent = '위에서 새 할 일을 추가해보세요.';
+      emptyStateEl.style.display = 'block';
+    } else {
+      emptyStateEl.style.display = 'none';
+      filtered.forEach(t => todoListEl.appendChild(createTodoEl(t)));
+    }
+
+    renderProgress();
+    renderFilterBtns();  // 카운트 배지 갱신
+  }
+
+  // ── 확인 모달 ─────────────────────────────────────────────────────────────
+
+  function showConfirm({ icon, title, message, action, confirmLabel = '삭제', confirmClass = 'modal-btn--danger' }) {
+    modalIconEl.textContent    = icon;
+    modalTitleEl.textContent   = title;
+    modalMessageEl.innerHTML   = message;
+    modalConfirmEl.className   = `modal-btn ${confirmClass}`;
+    modalConfirmEl.textContent = confirmLabel;
+    pendingAction = action;
+    modalOverlayEl.classList.add('visible');
+  }
+
+  function hideConfirm() {
+    pendingAction = null;
+    modalOverlayEl.classList.remove('visible');
+  }
+
+  // ── 카테고리 관리 모달 ────────────────────────────────────────────────────
+
+  function renderSwatches(containerEl, size, selected, onPick) {
+    containerEl.innerHTML = '';
+    COLOR_PALETTE.forEach(hex => {
+      const sw = document.createElement('button');
+      sw.className = `${size === 'lg' ? 'cat-color-swatch-lg' : 'cat-color-swatch'}${hex === selected ? ' selected' : ''}`;
+      sw.style.background = hex;
+      sw.title = hex;
+      sw.addEventListener('click', () => {
+        containerEl.querySelectorAll('[class*="cat-color-swatch"]').forEach(s => s.classList.remove('selected'));
+        sw.classList.add('selected');
+        onPick(hex);
+      });
+      containerEl.appendChild(sw);
+    });
+  }
+
+  function renderCatList() {
+    catListEl.innerHTML = '';
+    const isLast = categories.length <= 1;
+
+    categories.forEach(cat => {
+      const item = document.createElement('div');
+      item.className = 'cat-item';
+      item.dataset.id = cat.id;
+
+      const dot = document.createElement('span');
+      dot.className = 'cat-color-dot';
+      dot.style.background = cat.color;
+
+      const labelEl = document.createElement('span');
+      labelEl.className = 'cat-item-label';
+      labelEl.textContent = cat.label;
+
+      const acts = document.createElement('div');
+      acts.className = 'cat-item-actions';
+
+      const editBtn = document.createElement('button');
+      editBtn.className = 'cat-item-btn edit';
+      editBtn.title = '수정';
+      editBtn.textContent = '✎';
+      editBtn.addEventListener('click', () => handleCatEdit(cat.id));
+
+      const delBtn = document.createElement('button');
+      delBtn.className = 'cat-item-btn del';
+      delBtn.title = isLast ? '마지막 카테고리는 삭제할 수 없어요' : '삭제';
+      delBtn.textContent = '×';
+      delBtn.disabled = isLast;
+      delBtn.addEventListener('click', () => handleCatDelete(cat.id));
+
+      acts.appendChild(editBtn);
+      acts.appendChild(delBtn);
+      item.appendChild(dot);
+      item.appendChild(labelEl);
+      item.appendChild(acts);
+      catListEl.appendChild(item);
+    });
+  }
+
+  function openCatModal() {
+    newCatColor = COLOR_PALETTE[0];
+    catNameInputEl.value = '';
+    renderCatList();
+    renderSwatches(newCatPickerEl, 'lg', newCatColor, hex => { newCatColor = hex; });
+    catOverlayEl.classList.add('visible');
+    setTimeout(() => catNameInputEl.focus(), 200);
+  }
+
+  function closeCatModal() { catOverlayEl.classList.remove('visible'); }
+
+  // ── 카테고리 CRUD ─────────────────────────────────────────────────────────
+
+  function handleCatAdd() {
+    const label = catNameInputEl.value.trim();
+    if (!label) { shake(catNameInputEl); catNameInputEl.focus(); return; }
+
+    addCategory(label, newCatColor);
+    saveCategories();
+    fillSelect(catSelectEl);
+    renderFilterBtns();
+    renderTodos();
+
+    catNameInputEl.value = '';
+    newCatColor = COLOR_PALETTE[0];
+    renderSwatches(newCatPickerEl, 'lg', newCatColor, hex => { newCatColor = hex; });
+    renderCatList();
+  }
+
+  function handleCatEdit(id) {
+    if (catListEl.querySelector('.cat-edit-input')) return;
+
+    const cat  = getCat(id);
+    const item = catListEl.querySelector(`[data-id="${id}"]`);
+    if (!cat || !item) return;
+
+    let editColor = cat.color;
+    item.innerHTML = '';
+
+    const editArea = document.createElement('div');
+    editArea.className = 'cat-edit-area';
+
+    const miniPicker = document.createElement('div');
+    miniPicker.className = 'cat-mini-picker';
+    renderSwatches(miniPicker, 'sm', editColor, hex => { editColor = hex; });
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'cat-edit-input';
+    input.value = cat.label;
+    input.maxLength = 10;
+
+    editArea.appendChild(miniPicker);
+    editArea.appendChild(input);
+
+    const acts = document.createElement('div');
+    acts.className = 'cat-item-actions';
+
+    const saveBtn = document.createElement('button');
+    saveBtn.className = 'cat-item-btn edit';
+    saveBtn.title = '저장';
+    saveBtn.textContent = '✓';
+    saveBtn.style.color = 'var(--success)';
+    saveBtn.addEventListener('click', () => handleCatSave(id, input.value, editColor));
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.className = 'cat-item-btn del';
+    cancelBtn.title = '취소';
+    cancelBtn.textContent = '×';
+    cancelBtn.addEventListener('click', renderCatList);
+
+    acts.appendChild(saveBtn);
+    acts.appendChild(cancelBtn);
+    item.appendChild(editArea);
+    item.appendChild(acts);
+
+    input.focus();
+    input.select();
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter')  handleCatSave(id, input.value, editColor);
+      if (e.key === 'Escape') renderCatList();
+    });
+  }
+
+  function handleCatSave(id, label, color) {
+    if (!label.trim()) {
+      const inp = catListEl.querySelector(`[data-id="${id}"] .cat-edit-input`);
+      if (inp) { shake(inp); inp.focus(); }
+      return;
+    }
+    updateCategory(id, label, color);
+    saveCategories();
+    fillSelect(catSelectEl);
+    renderFilterBtns();
+    renderCatList();
+    renderTodos();
+  }
+
+  function handleCatDelete(id) {
+    if (categories.length <= 1) return;
+
+    const cat      = getCat(id);
+    const fallback = categories.find(c => c.id !== id);
+    const count    = todos.filter(t => t.category === id).length;
+
+    let message = `<strong>${cat.label}</strong> 카테고리를 삭제할까요?`;
+    if (count > 0) {
+      message += `<br><small style="color:var(--text-secondary);font-size:13px">할 일 ${count}개가 <strong>${fallback.label}</strong>으로 이동됩니다.</small>`;
+    }
+
+    closeCatModal();
+    showConfirm({
+      icon: '🏷️',
+      title: '카테고리 삭제',
+      message,
+      action: { type: 'category', id, fallbackId: fallback.id },
+    });
+  }
+
+  // ── 할 일 핸들러 ──────────────────────────────────────────────────────────
+
+  function handleAdd() {
+    const title = todoInputEl.value.trim();
+    if (!title) { shake(todoInputEl); todoInputEl.focus(); return; }
+
+    const newId = addTodo(title, catSelectEl.value);
+    saveTodos();
+    renderTodos();
+
+    const el = todoListEl.querySelector(`[data-id="${newId}"]`);
+    if (el) el.classList.add('item-enter');
+
+    todoInputEl.value = '';
+    todoInputEl.focus();
+  }
+
+  function handleToggle(id) {
+    toggleComplete(id);
+    saveTodos();
+    renderTodos();
+  }
+
+  function handleDeleteTodo(id) {
+    showConfirm({
+      icon: '🗑️',
+      title: '할 일 삭제',
+      message: '이 항목을 삭제하면 복구할 수 없어요.<br>정말 삭제할까요?',
+      action: { type: 'todo', id },
+    });
+  }
+
+  function handleEdit(id) {
+    if (todoListEl.querySelector('.todo-edit-input')) return;
+
+    const todo = todos.find(t => t.id === id);
+    const item = todoListEl.querySelector(`[data-id="${id}"]`);
+    if (!todo || !item) return;
+
+    item.classList.add('editing');
+
+    const body = item.querySelector('.todo-body');
+    body.innerHTML = '';
+
+    const titleInput = document.createElement('input');
+    titleInput.type = 'text';
+    titleInput.className = 'todo-edit-input';
+    titleInput.value = todo.title;
+
+    const catSel = document.createElement('select');
+    catSel.className = 'todo-edit-cat-select';
+    fillSelect(catSel, todo.category);
+
+    body.appendChild(titleInput);
+    body.appendChild(catSel);
+    titleInput.focus();
+    titleInput.select();
+
+    const actions = item.querySelector('.todo-actions');
+    actions.innerHTML = '';
+
+    const saveBtn = document.createElement('button');
+    saveBtn.className = 'todo-save';
+    saveBtn.title = '저장';
+    saveBtn.textContent = '✓';
+    saveBtn.addEventListener('click', () => handleSave(id));
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.className = 'todo-cancel-edit';
+    cancelBtn.title = '취소';
+    cancelBtn.textContent = '×';
+    cancelBtn.addEventListener('click', () => renderTodos());
+
+    actions.appendChild(saveBtn);
+    actions.appendChild(cancelBtn);
+
+    titleInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter')  handleSave(id);
+      if (e.key === 'Escape') renderTodos();
+    });
+  }
+
+  function handleSave(id) {
+    const item       = todoListEl.querySelector(`[data-id="${id}"]`);
+    const titleInput = item && item.querySelector('.todo-edit-input');
+    const catSel     = item && item.querySelector('.todo-edit-cat-select');
+    if (!titleInput) return;
+
+    const newTitle = titleInput.value.trim();
+    if (!newTitle) { shake(titleInput); titleInput.focus(); return; }
+
+    updateTodo(id, newTitle, catSel ? catSel.value : todos.find(t => t.id === id).category);
+    saveTodos();
+    renderTodos();
+  }
+
+  // ── 챗봇 (Gemini) ────────────────────────────────────────────────────────
+
+  const chatFabEl      = document.getElementById('chat-fab');
+  const chatPanelEl    = document.getElementById('chat-panel');
+  const chatCloseBtnEl = document.getElementById('chat-close-btn');
+  const chatMessagesEl = document.getElementById('chat-messages');
+  const chatInputEl    = document.getElementById('chat-input');
+  const chatSendBtnEl  = document.getElementById('chat-send-btn');
+
+  let chatHistory = [];
+  let chatOpen    = false;
+  let chatLoading = false;
+
+  function toggleChat(open) {
+    chatOpen = open !== undefined ? open : !chatOpen;
+    chatPanelEl.classList.toggle('visible', chatOpen);
+    chatFabEl.textContent = chatOpen ? '×' : '💬';
+    if (chatOpen) setTimeout(() => chatInputEl.focus(), 200);
+  }
+
+  function appendChatBubble(role, text) {
+    const empty = chatMessagesEl.querySelector('.chat-empty');
+    if (empty) empty.remove();
+    const bubble = document.createElement('div');
+    bubble.className = `chat-msg ${role}`;
+    bubble.textContent = text;
+    chatMessagesEl.appendChild(bubble);
+    chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
+    return bubble;
+  }
+
+  function showTyping() {
+    const typing = document.createElement('div');
+    typing.className = 'chat-msg typing';
+    typing.id = 'chat-typing';
+    typing.innerHTML = '<span class="chat-typing-dot"></span><span class="chat-typing-dot"></span><span class="chat-typing-dot"></span>';
+    chatMessagesEl.appendChild(typing);
+    chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
+  }
+
+  function hideTyping() {
+    const typing = document.getElementById('chat-typing');
+    if (typing) typing.remove();
+  }
+
+  async function sendChatMessage() {
+    const text = chatInputEl.value.trim();
+    if (chatLoading) return;
+    if (!text) { shake(chatInputEl); return; }
+
+    chatHistory.push({ role: 'user', text });
+    appendChatBubble('user', text);
+    chatInputEl.value = '';
+    chatLoading = true;
+    chatSendBtnEl.disabled = true;
+    showTyping();
+
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: chatHistory }),
+      });
+      const data = await res.json();
+      hideTyping();
+
+      if (!res.ok) throw new Error(data.error || '오류가 발생했어요.');
+
+      chatHistory.push({ role: 'bot', text: data.reply });
+      appendChatBubble('bot', data.reply);
+    } catch (err) {
+      hideTyping();
+      appendChatBubble('error', err.message || '메시지를 보내지 못했어요. 잠시 후 다시 시도해주세요.');
+    } finally {
+      chatLoading = false;
+      chatSendBtnEl.disabled = false;
+      chatInputEl.focus();
+    }
+  }
+
+  function initChat() {
+    chatFabEl.addEventListener('click', () => toggleChat());
+    chatCloseBtnEl.addEventListener('click', () => toggleChat(false));
+    chatSendBtnEl.addEventListener('click', sendChatMessage);
+    chatInputEl.addEventListener('keydown', e => { if (e.key === 'Enter') sendChatMessage(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && chatOpen) toggleChat(false); });
+  }
+
+  // ── 초기화 ────────────────────────────────────────────────────────────────
+
+  function init() {
+    categories = loadCategories();
+    todos      = loadTodos();
+
+    headerDateEl.textContent = formatDate(new Date());
+
+    fillSelect(catSelectEl);
+    renderFilterBtns();
+
+    // 할 일 추가
+    addBtnEl.addEventListener('click', handleAdd);
+    todoInputEl.addEventListener('keydown', e => { if (e.key === 'Enter') handleAdd(); });
+
+    // 카테고리 관리 모달
+    manageCatBtnEl.addEventListener('click', openCatModal);
+    catCloseBtnEl.addEventListener('click', closeCatModal);
+    catAddBtnEl.addEventListener('click', handleCatAdd);
+    catNameInputEl.addEventListener('keydown', e => { if (e.key === 'Enter') handleCatAdd(); });
+    catOverlayEl.addEventListener('click', e => { if (e.target === catOverlayEl) closeCatModal(); });
+
+    // 확인 모달
+    modalCancelEl.addEventListener('click', hideConfirm);
+    modalOverlayEl.addEventListener('click', e => { if (e.target === modalOverlayEl) hideConfirm(); });
+
+    modalConfirmEl.addEventListener('click', () => {
+      if (!pendingAction) { hideConfirm(); return; }
+
+      if (pendingAction.type === 'todo') {
+        deleteTodo(pendingAction.id);
+        saveTodos();
+        hideConfirm();
+        renderTodos();
+
+      } else if (pendingAction.type === 'category') {
+        deleteCategory(pendingAction.id, pendingAction.fallbackId);
+        saveCategories();
+        saveTodos();
+        if (currentFilter === pendingAction.id) setFilter('all');
+        fillSelect(catSelectEl);
+        renderFilterBtns();
+        hideConfirm();
+        renderTodos();
+      }
+    });
+
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') {
+        if (modalOverlayEl.classList.contains('visible')) hideConfirm();
+        if (catOverlayEl.classList.contains('visible'))   closeCatModal();
+      }
+    });
+
+    initChat();
+    renderTodos();
+  }
+
+  init();
+</script>
+</body>
+</html>
